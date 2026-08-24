@@ -1,5 +1,7 @@
 import { test, expect } from '@playwright/test';
 
+const API_BASE_URL = 'https://api.realworld.show/api';
+
 test('API로 생성한 게시글을 UI에서 확인', async ({ request, page }) => {
 
 // API로 사용자 생성 (post /api/users)
@@ -9,7 +11,7 @@ test('API로 생성한 게시글을 UI에서 확인', async ({ request, page }) 
   const password = 'Test1234!';
 
   const response = await request.post(
-    'https://api.realworld.show/api/users',
+    `${API_BASE_URL}/users`,
     {
       data: {
         user: {
@@ -31,7 +33,7 @@ test('API로 생성한 게시글을 UI에서 확인', async ({ request, page }) 
 // API로 게시글 생성 (post /api/articles)
 // Authorization 헤더에 토큰을 포함하여 요청
 const articleResponse = await request.post(
-  'https://api.realworld.show/api/articles',
+  `${API_BASE_URL}/articles`,
   {
     headers: {
       Authorization: `Token ${token}`,
@@ -57,7 +59,7 @@ const title = articleBody.article.title;
 const articleText = articleBody.article.body;
 
 // API로 생성한 게시글을 보기 위해 로그인 
-await page.goto('https://demo.realworld.show/login');
+await page.goto('/login');
 
 await page.getByPlaceholder('Email').fill(email);
 await page.getByPlaceholder('Password').fill(password);
@@ -66,7 +68,7 @@ await page.getByRole('button', { name: 'Sign in' }).click();
 await expect(page.getByText(username)).toBeVisible();
 
 // API로 생성한 게시글이 UI에서 확인되는지 검증 
-await page.goto(`https://demo.realworld.show/article/${slug}`);
+await page.goto(`/article/${slug}`);
 
 await expect(page.getByRole('heading', { name: title })).toBeVisible();
 await expect(page.getByText(articleText)).toBeVisible();
@@ -99,7 +101,7 @@ expect(updateResponse.status()).toBe(200);
 
 // API로 게시글 수정이 정상적으로 되었는지 검증
 const finalResponse = await request.get(
-  `https://api.realworld.show/api/articles/${slug}`,
+  `${API_BASE_URL}/articles/${slug}`,
   {
     headers: {
       Authorization: `Token ${token}`,
