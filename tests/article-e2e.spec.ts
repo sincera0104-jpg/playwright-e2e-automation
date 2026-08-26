@@ -1,6 +1,5 @@
 import { test, expect } from '@playwright/test';
-
-const API_BASE_URL = 'https://api.realworld.show/api';
+import { createUser, createArticle, getArticle } from './api/realworld-api';
 
 test('API로 생성한 게시글을 UI에서 확인', async ({ request, page }) => {
 
@@ -10,48 +9,25 @@ test('API로 생성한 게시글을 UI에서 확인', async ({ request, page }) 
   const email = `qa-${timestamp}@example.com`;
   const password = 'Test1234!';
 
-  const response = await request.post(
-    `${API_BASE_URL}/users`,
-    {
-      data: {
-        user: {
-          username,
-          email,
-          password,
-        },
-      },
-    }
-  );
-
-  expect(response.status()).toBe(201);
-
-  const body = await response.json();
-  // console.log('사용자 생성 응답', body);
+  const body = await createUser(
+  request,
+  username,
+  email,
+  password
+);
 
   const token = body.user.token;
 
 // API로 게시글 생성 (post /api/articles)
-// Authorization 헤더에 토큰을 포함하여 요청
-const articleResponse = await request.post(
-  `${API_BASE_URL}/articles`,
-  {
-    headers: {
-      Authorization: `Token ${token}`,
-    },
-    data: {
-      article: {
-        title: `Playwright E2E Test ${timestamp}`,
-        description: 'Created by Playwright API',
-        body: 'This article was created for E2E automation testing.',
-        tagList: ['playwright', 'e2e'],
-      },
-    },
-  }
+const articleBody = await createArticle(
+  request,
+  token,
+  `Playwright E2E Test ${timestamp}`,
+  'Created by Playwright API',
+  'This article was created for E2E automation testing.',
+  ['playwright', 'e2e']
 );
 
-expect(articleResponse.status()).toBe(201);
-
-const articleBody = await articleResponse.json();
 console.log('게시글 생성 응답', articleBody);
 
 const slug = articleBody.article.slug;
@@ -100,18 +76,11 @@ expect(updateResponse.status()).toBe(200);
 // console.log('게시글 수정 응답:', await updateResponse.json());
 
 // API로 게시글 수정이 정상적으로 되었는지 검증
-const finalResponse = await request.get(
-  `${API_BASE_URL}/articles/${slug}`,
-  {
-    headers: {
-      Authorization: `Token ${token}`,
-    },
-  }
+const finalBody = await getArticle(
+  request,
+  token,
+  slug
 );
-
-expect(finalResponse.status()).toBe(200);
-
-const finalBody = await finalResponse.json();
 
 expect(finalBody.article.body).toBe(updatedBody);
 }); 
