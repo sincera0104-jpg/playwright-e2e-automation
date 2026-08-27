@@ -3,7 +3,7 @@ import { createUser, createArticle, getArticle } from './api/realworld-api';
 
 test('UI에서 수정한 게시글이 API 데이터에 반영된다', async ({ request, page }) => {
 
-    // API로 사용자 생성 (post /api/users)
+    // Arrange: 테스트 데이터 준비 
     const timestamp = Date.now();
     const username = `qa-user-${timestamp}`;
     const email = `qa-${timestamp}@example.com`;
@@ -18,7 +18,6 @@ test('UI에서 수정한 게시글이 API 데이터에 반영된다', async ({ r
 
     const token = userbody.user.token;
 
-    // API로 게시글 생성 (post /api/articles)
     const articleBody = await createArticle(
         request,
         token,
@@ -28,13 +27,11 @@ test('UI에서 수정한 게시글이 API 데이터에 반영된다', async ({ r
         ['playwright', 'e2e']
     );
 
-    console.log('게시글 생성 응답', articleBody);
-
     const slug = articleBody.article.slug;
     const title = articleBody.article.title;
     const articleText = articleBody.article.body;
 
-    // API로 생성한 게시글을 보기 위해 로그인 
+    // Act: UI에서 게시글 확인 및 수정 
     await page.goto('/login');
 
     await page.getByPlaceholder('Email').fill(email);
@@ -42,14 +39,12 @@ test('UI에서 수정한 게시글이 API 데이터에 반영된다', async ({ r
     await page.getByRole('button', { name: 'Sign in' }).click();
 
     await expect(page.getByText(username)).toBeVisible();
-
-    // API로 생성한 게시글이 UI에서 확인되는지 검증 
+ 
     await page.goto(`/article/${slug}`);
 
     await expect(page.getByRole('heading', { name: title })).toBeVisible();
     await expect(page.getByText(articleText)).toBeVisible();
 
-    // UI에서 게시글 수정 테스트 
     await page.getByRole('link', { name: 'Edit Article' }).first().click();
 
     await expect(page.getByPlaceholder('Article Title')).toHaveValue(title);
@@ -73,10 +68,7 @@ test('UI에서 수정한 게시글이 API 데이터에 반영된다', async ({ r
 
     expect(updateResponse.status()).toBe(200);
 
-    //console.log('게시글 수정 status:', updateResponse.status());
-    //console.log('게시글 수정 응답:', await updateResponse.json());
-
-    // API로 게시글 조회 
+    // Assert: API로 최종 상태 검증 
     const finalBody = await getArticle(
         request,
         token,
