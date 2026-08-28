@@ -32,14 +32,11 @@ test('UI에서 수정한 게시글이 API 데이터에 반영된다', async ({ r
     const articleText = articleBody.article.body;
 
     // Act: UI에서 게시글 확인 및 수정 
-    await page.goto('/login');
+    // API에서 발급받은 token으로 브라우저 인증 상태 설정
+    await page.addInitScript(token => {
+        localStorage.setItem('jwtToken', token);
+    }, token);
 
-    await page.getByPlaceholder('Email').fill(email);
-    await page.getByPlaceholder('Password').fill(password);
-    await page.getByRole('button', { name: 'Sign in' }).click();
-
-    await expect(page.getByText(username)).toBeVisible();
- 
     await page.goto(`/article/${slug}`);
 
     await expect(page.getByRole('heading', { name: title })).toBeVisible();
