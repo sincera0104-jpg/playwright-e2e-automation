@@ -74,3 +74,20 @@ export async function getArticle(
 
   return await response.json();
 }
+
+export async function deleteArticle(
+  request: APIRequestContext,
+  token: string,
+  slug: string
+) {
+  const response = await request.delete(
+    `${API_BASE_URL}/articles/${slug}`,
+    {
+      headers: {
+        Authorization: `Token ${token}`,
+      },
+    }
+  );
+
+  expect(response.status()).toBe(204);
+}

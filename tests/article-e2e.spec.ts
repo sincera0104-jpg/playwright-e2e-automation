@@ -1,5 +1,10 @@
 import { test, expect } from '@playwright/test';
-import { createUser, createArticle, getArticle } from './api/realworld-api';
+import {
+  createUser,
+  createArticle,
+  getArticle,
+  deleteArticle,
+} from './api/realworld-api';
 
 test('UI에서 수정한 게시글이 API 데이터에 반영된다', async ({ request, page }) => {
 
@@ -74,4 +79,7 @@ test('UI에서 수정한 게시글이 API 데이터에 반영된다', async ({ r
 
     // 수정한 게시글과 API로 조회한 게시글이 일치하는지 검증 
     expect(finalBody.article.body).toBe(updatedBody);
+
+    // Cleanup: 테스트 데이터 삭제
+    await deleteArticle(request, token, slug);
 }); 
