@@ -6,13 +6,19 @@ import {
   deleteArticle,
 } from './api/realworld-api';
 
+const TEST_PASSWORD = 'Test1234!';
+
+const ARTICLE_DESCRIPTION = 'Created by Playwright API';
+const ARTICLE_BODY = 'This article was created for E2E automation testing.';
+const UPDATED_ARTICLE_BODY = 'This article was updated through the UI.';
+
 test('UI에서 수정한 게시글이 API 데이터에 반영된다', async ({ request, page }) => {
 
     // Arrange: 테스트 데이터 준비 
     const timestamp = Date.now();
     const username = `qa-user-${timestamp}`;
     const email = `qa-${timestamp}@example.com`;
-    const password = 'Test1234!';
+    const password = TEST_PASSWORD;
 
     const userbody = await createUser(
         request,
@@ -27,8 +33,8 @@ test('UI에서 수정한 게시글이 API 데이터에 반영된다', async ({ r
         request,
         token,
         `Playwright E2E Test ${timestamp}`,
-        'Created by Playwright API',
-        'This article was created for E2E automation testing.',
+        ARTICLE_DESCRIPTION,
+        ARTICLE_BODY,
         ['playwright', 'e2e']
     );
 
@@ -51,11 +57,9 @@ test('UI에서 수정한 게시글이 API 데이터에 반영된다', async ({ r
 
     await expect(page.getByPlaceholder('Article Title')).toHaveValue(title);
 
-    const updatedBody = 'This article was updated through the UI.';
-
     await page
         .getByPlaceholder('Write your article (in markdown)')
-        .fill(updatedBody);
+        .fill(UPDATED_ARTICLE_BODY);
 
     // UI에서 발생한 게시글 수정 API가 정상 처리되는지 검증 
     const updateResponsePromise = page.waitForResponse(
@@ -78,7 +82,7 @@ test('UI에서 수정한 게시글이 API 데이터에 반영된다', async ({ r
     );
 
     // 수정한 게시글과 API로 조회한 게시글이 일치하는지 검증 
-    expect(finalBody.article.body).toBe(updatedBody);
+    expect(finalBody.article.body).toBe(UPDATED_ARTICLE_BODY);
 
     // Cleanup: 테스트 데이터 삭제
     await deleteArticle(request, token, slug);
