@@ -77,6 +77,21 @@ UI 기본 URL은 `playwright.config.ts`, API 기본 URL은 `realworld-api.ts`에
 
 GitHub Actions를 통해 `main` 브랜치의 Push 및 Pull Request 시 Chromium 환경에서 E2E 테스트가 자동 실행됩니다.
 
+## CI 및 테스트 리포트
+
+GitHub Actions를 통해 main 브랜치의 Push 및 Pull Request 시 Chromium 환경에서 E2E 테스트를 자동 실행합니다.
+
+테스트 실행 결과는 GitHub Actions artifact로 저장하며 7일간 보관 후 자동 삭제되도록 설정했습니다.
+
+PASS
+→ Playwright HTML Report 저장
+
+FAIL
+→ Playwright HTML Report 저장
+→ retry 시 Trace 등 test-results 저장
+
+이를 통해 CI 실행 결과를 확인하고, 테스트 실패 시 Trace를 활용해 실패 지점과 브라우저 동작을 추적할 수 있도록 구성했습니다.
+
 ## 기술 스택
 
 `Playwright` · `TypeScript` · `Node.js` · `REST API` · `GitHub Actions`
@@ -112,3 +127,4 @@ npx playwright test --headed
 * API 인증 기반으로 로그인 최적화 ✅
 * 테스트 데이터 cleanup 추가 ✅
 * 테스트 데이터 상수 분리 ✅
+* Playwright  테스트 리포트 artifact 추가 ✅
