@@ -75,6 +75,23 @@ export async function getArticle(
   return await response.json();
 }
 
+export async function expectArticleNotFound(
+  request: APIRequestContext,
+  token: string,
+  slug: string
+) {
+  const response = await request.get(
+    `${API_BASE_URL}/articles/${slug}`,
+    {
+      headers: {
+        Authorization: `Token ${token}`,
+      },
+    }
+  );
+
+  expect(response.status()).toBe(404);
+}
+
 export async function deleteArticle(
   request: APIRequestContext,
   token: string,
@@ -91,3 +108,4 @@ export async function deleteArticle(
 
   expect(response.status()).toBe(204);
 }
+

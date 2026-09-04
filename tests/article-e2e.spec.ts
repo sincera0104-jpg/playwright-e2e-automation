@@ -4,6 +4,7 @@ import {
   createArticle,
   getArticle,
   deleteArticle,
+  expectArticleNotFound
 } from './api/realworld-api';
 
 const TEST_PASSWORD = 'Test1234!';
@@ -87,3 +88,65 @@ test('UI에서 수정한 게시글이 API 데이터에 반영된다', async ({ r
     // Cleanup: 테스트 데이터 삭제
     await deleteArticle(request, token, slug);
 }); 
+
+test('UI에서 삭제한 게시글이 API에서도 존재하지 않는다', async ({ request, page }) => {
+  // Arrange: 테스트 데이터 준비
+  const timestamp = Date.now();
+  const username = `qa-user-${timestamp}`;
+  const email = `qa-${timestamp}@example.com`;
+
+  const userBody = await createUser(
+    request,
+    username,
+    email,
+    TEST_PASSWORD
+  );
+
+  const token = userBody.user.token;
+
+  const articleBody = await createArticle(
+    request,
+    token,
+    `Delete E2E Test ${timestamp}`,
+    ARTICLE_DESCRIPTION,
+    ARTICLE_BODY,
+    ['playwright', 'delete']
+  );
+
+  const slug = articleBody.article.slug;
+  const title = articleBody.article.title;
+
+  // API token으로 브라우저 인증 상태 설정
+  await page.addInitScript(token => {
+    localStorage.setItem('jwtToken', token);
+  }, token);
+
+  // Act: UI에서 게시글 삭제
+  await page.goto(`/article/${slug}`);
+
+  await expect(
+    page.getByRole('heading', { name: title })
+  ).toBeVisible();
+
+  const deleteResponsePromise = page.waitForResponse(
+    response =>
+      response.url().includes(`/api/articles/${slug}`) &&
+      response.request().method() === 'DELETE'
+  );
+
+  await page
+    .getByRole('button', { name: 'Delete Article' })
+    .first()
+    .click();
+
+  const deleteResponse = await deleteResponsePromise;
+
+  expect(deleteResponse.status()).toBe(204);
+
+  // Assert: API에서 게시글이 실제로 삭제됐는지 검증
+  await expectArticleNotFound(
+    request,
+    token,
+    slug
+  );
+});
