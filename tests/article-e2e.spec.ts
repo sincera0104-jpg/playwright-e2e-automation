@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, request as playwrightRequest } from '@playwright/test';
 import {
   createUser,
   createArticle,
@@ -13,22 +13,34 @@ const ARTICLE_DESCRIPTION = 'Created by Playwright API';
 const ARTICLE_BODY = 'This article was created for E2E automation testing.';
 const UPDATED_ARTICLE_BODY = 'This article was updated through the UI.';
 
+let token: string;
+
+test.describe.configure({ mode: 'default' });
+
+test.beforeAll(async () => {
+  const apiContext = await playwrightRequest.newContext();
+
+  const timestamp = Date.now();
+  const username = `qa-user-${timestamp}`;
+  const email = `qa-${timestamp}@example.com`;
+
+  const userBody = await createUser(
+    apiContext,
+    username,
+    email,
+    TEST_PASSWORD
+  );
+
+  token = userBody.user.token;
+
+  await apiContext.dispose();
+});
+
 test('UI에서 수정한 게시글이 API 데이터에 반영된다', async ({ request, page }) => {
 
     // Arrange: 테스트 데이터 준비 
     const timestamp = Date.now();
-    const username = `qa-user-${timestamp}`;
-    const email = `qa-${timestamp}@example.com`;
     const password = TEST_PASSWORD;
-
-    const userbody = await createUser(
-        request,
-        username,
-        email,
-        password
-    );
-
-    const token = userbody.user.token;
 
     const articleBody = await createArticle(
         request,
@@ -92,17 +104,6 @@ test('UI에서 수정한 게시글이 API 데이터에 반영된다', async ({ r
 test('UI에서 삭제한 게시글이 API에서도 존재하지 않는다', async ({ request, page }) => {
   // Arrange: 테스트 데이터 준비
   const timestamp = Date.now();
-  const username = `qa-user-${timestamp}`;
-  const email = `qa-${timestamp}@example.com`;
-
-  const userBody = await createUser(
-    request,
-    username,
-    email,
-    TEST_PASSWORD
-  );
-
-  const token = userBody.user.token;
 
   const articleBody = await createArticle(
     request,
