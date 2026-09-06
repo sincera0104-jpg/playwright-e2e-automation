@@ -1,5 +1,7 @@
 # Playwright E2E Automation
 
+![Playwright E2E Tests](https://github.com/sincera0104-jpg/playwright-e2e-automation/actions/workflows/playwright.yml/badge.svg?branch=main)
+
 Playwright + TypeScript를 활용한 **API + UI E2E 테스트 자동화 프로젝트**입니다.
 
 모든 과정을 UI로 자동화하기보다, 테스트 목적에 따라 API와 UI의 역할을 구분해 **테스트 실행 효율과 최종 데이터 검증**을 함께 고려했습니다.
