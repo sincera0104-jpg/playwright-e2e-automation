@@ -39,112 +39,147 @@ test.beforeAll(async () => {
 
 // API에서 발급받은 token으로 브라우저 인증 상태 설정
 test.beforeEach(async ({ page }) => {
-  await page.addInitScript(token => {
-    localStorage.setItem('jwtToken', token);
-  }, token);
+    await page.addInitScript(token => {
+        localStorage.setItem('jwtToken', token);
+    }, token);
 });
 
 test('UI에서 수정한 게시글이 API 데이터에 반영된다', async ({ request, page }) => {
 
-    // Arrange: 테스트 데이터 준비 
-    const timestamp = Date.now();
+    // Arrange
+    const { slug, title, articleText } = await test.step(
+        '게시글 테스트 데이터 생성',
+        async () => {
+            const timestamp = Date.now();
 
-    const articleBody = await createArticle(
-        request,
-        token,
-        `Playwright E2E Test ${timestamp}`,
-        ARTICLE_DESCRIPTION,
-        ARTICLE_BODY,
-        ['playwright', 'e2e']
+            const articleBody = await createArticle(
+                request,
+                token,
+                `Playwright E2E Test ${timestamp}`,
+                ARTICLE_DESCRIPTION,
+                ARTICLE_BODY,
+                ['playwright', 'e2e']
+            );
+
+            return {
+                slug: articleBody.article.slug,
+                title: articleBody.article.title,
+                articleText: articleBody.article.body,
+            };
+        }
     );
 
-    const slug = articleBody.article.slug;
-    const title = articleBody.article.title;
-    const articleText = articleBody.article.body;
+    // Act
+    await test.step('UI에서 게시글 확인 및 수정', async () => {
+        await page.goto(`/article/${slug}`);
 
-    // Act: UI에서 게시글 확인 및 수정 
-    await page.goto(`/article/${slug}`);
+        await expect(
+            page.getByRole('heading', { name: title })
+        ).toBeVisible();
 
-    await expect(page.getByRole('heading', { name: title })).toBeVisible();
-    await expect(page.getByText(articleText)).toBeVisible();
+        await expect(
+            page.getByText(articleText)
+        ).toBeVisible();
 
-    await page.getByRole('link', { name: 'Edit Article' }).first().click();
+        await page
+            .getByRole('link', { name: 'Edit Article' })
+            .first()
+            .click();
 
-    await expect(page.getByPlaceholder('Article Title')).toHaveValue(title);
+        await expect(
+            page.getByPlaceholder('Article Title')
+        ).toHaveValue(title);
 
-    await page
-        .getByPlaceholder('Write your article (in markdown)')
-        .fill(UPDATED_ARTICLE_BODY);
+        await page
+            .getByPlaceholder('Write your article (in markdown)')
+            .fill(UPDATED_ARTICLE_BODY);
 
-    // UI에서 발생한 게시글 수정 API가 정상 처리되는지 검증 
-    const updateResponsePromise = page.waitForResponse(
-        response =>
-            response.url().includes(`/api/articles/${slug}`) &&
-            response.request().method() === 'PUT'
-    );
+        const updateResponsePromise = page.waitForResponse(
+            response =>
+                response.url().includes(`/api/articles/${slug}`) &&
+                response.request().method() === 'PUT'
+        );
 
-    await page.getByRole('button', { name: 'Publish Article' }).click();
+        await page
+            .getByRole('button', { name: 'Publish Article' })
+            .click();
 
-    const updateResponse = await updateResponsePromise;
+        const updateResponse = await updateResponsePromise;
 
-    expect(updateResponse.status()).toBe(200);
+        expect(updateResponse.status()).toBe(200);
+    });
 
-    // Assert: API로 최종 상태 검증 
-    const finalBody = await getArticle(
-        request,
-        token,
-        slug
-    );
+    // Assert
+    await test.step('API로 최종 데이터 검증', async () => {
+        const finalBody = await getArticle(
+            request,
+            token,
+            slug
+        );
 
-    // 수정한 게시글과 API로 조회한 게시글이 일치하는지 검증 
-    expect(finalBody.article.body).toBe(UPDATED_ARTICLE_BODY);
+        expect(finalBody.article.body).toBe(UPDATED_ARTICLE_BODY);
+    });
 
-    // Cleanup: 테스트 데이터 삭제
-    await deleteArticle(request, token, slug);
+    // Cleanup
+    await test.step('테스트 데이터 정리', async () => {
+        await deleteArticle(request, token, slug);
+    });
 });
 
 test('UI에서 삭제한 게시글이 API에서도 존재하지 않는다', async ({ request, page }) => {
-    // Arrange: 테스트 데이터 준비
-    const timestamp = Date.now();
 
-    const articleBody = await createArticle(
-        request,
-        token,
-        `Delete E2E Test ${timestamp}`,
-        ARTICLE_DESCRIPTION,
-        ARTICLE_BODY,
-        ['playwright', 'delete']
+    // Arrange
+    const { slug, title } = await test.step(
+        '게시글 테스트 데이터 생성',
+        async () => {
+            const timestamp = Date.now();
+
+            const articleBody = await createArticle(
+                request,
+                token,
+                `Delete E2E Test ${timestamp}`,
+                ARTICLE_DESCRIPTION,
+                ARTICLE_BODY,
+                ['playwright', 'delete']
+            );
+
+            return {
+                slug: articleBody.article.slug,
+                title: articleBody.article.title,
+            };
+        }
     );
 
-    const slug = articleBody.article.slug;
-    const title = articleBody.article.title;
+    // Act
+    await test.step('UI에서 게시글 삭제', async () => {
+        await page.goto(`/article/${slug}`);
 
-    // Act: UI에서 게시글 삭제
-    await page.goto(`/article/${slug}`);
+        await expect(
+            page.getByRole('heading', { name: title })
+        ).toBeVisible();
 
-    await expect(
-        page.getByRole('heading', { name: title })
-    ).toBeVisible();
+        const deleteResponsePromise = page.waitForResponse(
+            response =>
+                response.url().includes(`/api/articles/${slug}`) &&
+                response.request().method() === 'DELETE'
+        );
 
-    const deleteResponsePromise = page.waitForResponse(
-        response =>
-            response.url().includes(`/api/articles/${slug}`) &&
-            response.request().method() === 'DELETE'
-    );
+        await page
+            .getByRole('button', { name: 'Delete Article' })
+            .first()
+            .click();
 
-    await page
-        .getByRole('button', { name: 'Delete Article' })
-        .first()
-        .click();
+        const deleteResponse = await deleteResponsePromise;
 
-    const deleteResponse = await deleteResponsePromise;
+        expect(deleteResponse.status()).toBe(204);
+    });
 
-    expect(deleteResponse.status()).toBe(204);
-
-    // Assert: API에서 게시글이 실제로 삭제됐는지 검증
-    await expectArticleNotFound(
-        request,
-        token,
-        slug
-    );
+    // Assert
+    await test.step('API로 삭제 결과 검증', async () => {
+        await expectArticleNotFound(
+            request,
+            token,
+            slug
+        );
+    });
 });
