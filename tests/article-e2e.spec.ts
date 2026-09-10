@@ -183,3 +183,58 @@ test('UI에서 삭제한 게시글이 API에서도 존재하지 않는다', asyn
         );
     });
 });
+
+test('UI에서 생성한 게시글이 API 데이터에 정상 반영된다', async ({ request, page }) => {
+  const timestamp = Date.now();
+  const title = `Create E2E Test ${timestamp}`;
+
+  const slug = await test.step('UI에서 게시글 생성', async () => {
+    await page.goto('/editor');
+
+    await page
+      .getByPlaceholder('Article Title')
+      .fill(title);
+
+    await page
+      .getByPlaceholder("What's this article about?")
+      .fill(ARTICLE_DESCRIPTION);
+
+    await page
+      .getByPlaceholder('Write your article (in markdown)')
+      .fill(ARTICLE_BODY);
+
+    const createResponsePromise = page.waitForResponse(
+      response =>
+        response.url().includes('/api/articles') &&
+        response.request().method() === 'POST'
+    );
+
+    await page
+      .getByRole('button', { name: 'Publish Article' })
+      .click();
+
+    const createResponse = await createResponsePromise;
+
+    expect(createResponse.status()).toBe(201);
+
+    const responseBody = await createResponse.json();
+
+    return responseBody.article.slug;
+  });
+
+  await test.step('API로 생성 결과 검증', async () => {
+    const finalBody = await getArticle(
+      request,
+      token,
+      slug
+    );
+
+    expect(finalBody.article.title).toBe(title);
+    expect(finalBody.article.description).toBe(ARTICLE_DESCRIPTION);
+    expect(finalBody.article.body).toBe(ARTICLE_BODY);
+  });
+
+  await test.step('테스트 데이터 정리', async () => {
+    await deleteArticle(request, token, slug);
+  });
+});
