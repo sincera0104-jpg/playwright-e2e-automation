@@ -10,6 +10,10 @@ jobs:
   test:
     runs-on: ubuntu-latest
 
+    env:
+      UI_BASE_URL: https://demo.realworld.show
+      API_BASE_URL: https://api.realworld.show/api
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -38,6 +42,3 @@ jobs:
             playwright-report/
             test-results/
           retention-days: 7
-
-
-          

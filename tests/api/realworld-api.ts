@@ -1,6 +1,6 @@
 import { APIRequestContext, expect } from '@playwright/test';
 
-const API_BASE_URL = 'https://api.realworld.show/api';
+const API_BASE_URL = process.env.API_BASE_URL;
 
 export async function createUser(
   request: APIRequestContext,
