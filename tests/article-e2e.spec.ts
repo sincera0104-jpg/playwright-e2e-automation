@@ -238,3 +238,40 @@ test('UI에서 생성한 게시글이 API 데이터에 정상 반영된다', asy
     await deleteArticle(request, token, slug);
   });
 });
+
+test('게시글 제목이 비어 있으면 생성되지 않는다', async ({ page }) => {
+
+  await test.step('제목 없이 게시글 생성 시도', async () => {
+    await page.goto('/editor');
+
+    await page
+      .getByPlaceholder("What's this article about?")
+      .fill(ARTICLE_DESCRIPTION);
+
+    await page
+      .getByPlaceholder('Write your article (in markdown)')
+      .fill(ARTICLE_BODY);
+
+    const createResponsePromise = page.waitForResponse(
+      response =>
+        response.url().includes('/api/articles') &&
+        response.request().method() === 'POST'
+    );
+
+    await page
+      .getByRole('button', { name: 'Publish Article' })
+      .click();
+
+    const createResponse = await createResponsePromise;
+
+    expect(createResponse.status()).toBe(422);
+  });
+
+  await test.step('필수값 validation 에러 확인', async () => {
+    await expect(
+      page.getByText("title can't be blank")
+    ).toBeVisible();
+
+    await expect(page).toHaveURL(/\/editor/);
+  });
+});
