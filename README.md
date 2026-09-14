@@ -9,19 +9,34 @@ Playwright + TypeScript를 활용한 **API + UI E2E 테스트 자동화 프로�
 ## 테스트 시나리오
 
 ```text
-API 테스트 사용자 생성
-        ↓
-API 게시글 생성
-        ↓
-JWT Token을 브라우저 localStorage에 주입 (로그인)
-        ↓
-UI 게시글 노출 확인
-        ↓
-UI 게시글 수정
-        ↓
-API 최종 데이터 상태 검증  
-        ↓
-성공한 테스트 게시글 삭제  
+공통 사전조건
+→ API로 테스트 사용자 1회 생성
+→ 각 테스트 시작 시 JWT Token으로 브라우저 인증 상태 설정
+
+Create
+→ UI에서 게시글 생성
+→ POST /articles 201 응답 확인
+→ API로 생성 데이터 재조회 및 검증
+→ 성공한 테스트 게시글 삭제
+
+Update
+→ API로 게시글 생성
+→ UI에서 게시글 수정
+→ PUT /articles/{slug} 200 응답 확인
+→ API로 수정 데이터 재조회 및 검증
+→ 성공한 테스트 게시글 삭제
+
+Delete
+→ API로 게시글 생성
+→ UI에서 게시글 삭제
+→ DELETE /articles/{slug} 204 응답 확인
+→ API 재조회 시 404 확인
+
+Negative
+→ 제목 없이 게시글 생성 시도
+→ POST /articles 422 응답 확인
+→ "title can't be blank" validation 메시지 확인
+→ editor 화면 유지 확인
 ```
 
 테스트 목적은 **UI에서 수행한 게시글 수정이 실제 서버 데이터까지 정상 반영되는지 검증하는 것**입니다.
@@ -30,23 +45,27 @@ API 최종 데이터 상태 검증
 
 실제 사용자 행동 검증이 필요한 게시글 확인 및 수정은 UI로 수행하고, 수정 이후 API를 통해 최종 서버 데이터까지 검증합니다.  
 
+테스트 파일 실행 시 `beforeAll`에서 테스트 사용자를 한 번 생성해 여러 시나리오에서 재사용하고, `beforeEach`에서 JWT 인증 상태를 설정해 반복되는 사전조건을 공통화했습니다.  
+
+각 테스트는 `test.step()`으로 데이터 준비, UI 동작, API 검증, Cleanup 단계를 구분해 HTML Report에서 진행 단계와 실패 지점을 쉽게 확인할 수 있도록 구성했습니다.
+
 ## 테스트 설계
 
 ```text
 Arrange
-→ API로 사용자 및 게시글 생성
-→ JWT Token으로 브라우저 인증 상태 설정
+→ 공용 테스트 사용자 및 인증 상태 준비
+→ 필요한 경우 API로 게시글 사전 생성
 
 Act
-→ UI에서 게시글 확인 및 수정
-→ 수정 PUT API 응답 확인
+→ UI에서 게시글 생성 / 수정 / 삭제 수행
 
 Assert
-→ API로 게시글 재조회
-→ UI에서 수정한 값과 최종 서버 데이터 비교
+→ UI 동작으로 발생한 POST / PUT / DELETE 응답 검증
+→ API 재조회로 최종 서버 상태 검증
+→ 네거티브 케이스에서는 422 응답과 validation 메시지 검증
 
-Cleanup  
-→ 성공한 테스트 게시글 삭제
+Cleanup
+→ 성공한 테스트 데이터 삭제
 ```
 
 UI에서 모든 사전조건을 만드는 대신 API를 활용해 테스트 단계를 줄이고, UI 결과뿐 아니라 실제 데이터 상태까지 검증합니다.  
@@ -84,6 +103,8 @@ API 요청 로직은 `realworld-api.ts`로 분리하고, `article-e2e.spec.ts`�
 UI 기본 URL은 `playwright.config.ts`, API 기본 URL은 `realworld-api.ts`에서 관리합니다.
 
 GitHub Actions를 통해 `main` 브랜치의 Push 및 Pull Request 시 Chromium 환경에서 E2E 테스트가 자동 실행됩니다.
+
+기본 URL은 환경변수로 관리하며, 로컬에서는 .env, CI에서는 GitHub Actions의 env를 통해 주입합니다.
 
 ## CI 및 테스트 리포트
 
@@ -127,10 +148,9 @@ npx playwright test --headed
 ```
 
 ## Next
-
-* 테스트 시나리오 확장
-* 테스트 케이스 증가 시 Page Object Model 적용 검토
-* 테스트 데이터 관리 전략 고도화  
+* 추가 네거티브 시나리오 확장
+* 테스트 증가 시 Page Object Model 적용 검토
+* 테스트 데이터 관리 전략 고도화
 
 * API 요청 로직 분리 ✅
 * UI / API baseURL 분리 ✅
@@ -138,4 +158,4 @@ npx playwright test --headed
 * 테스트 데이터 cleanup 추가 ✅
 * 테스트 데이터 상수 분리 ✅
 * Playwright  테스트 리포트 artifact 추가 ✅
-
+* UI/API 환경변수 분리 ✅
