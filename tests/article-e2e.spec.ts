@@ -6,6 +6,7 @@ import {
   deleteArticle,
   expectArticleNotFound
 } from './api/realworld-api';
+import { ArticleEditorPage } from './pages/article-editor.page';
 
 const TEST_PASSWORD = 'Test1234!';
 
@@ -32,6 +33,7 @@ const REQUIRED_FIELD_CASES = [
 ] as const;
 
 let token: string;
+let articleEditor: ArticleEditorPage;
 
 // 두 테스트가 같은 파일 안에서 한 worker에서 순서대로 실행되도록 하기 위한 설정
 test.describe.configure({ mode: 'default' });
@@ -60,6 +62,8 @@ test.beforeEach(async ({ page }) => {
   await page.addInitScript(token => {
     localStorage.setItem('jwtToken', token);
   }, token);
+
+  articleEditor = new ArticleEditorPage(page);
 });
 
 test('UI에서 수정한 게시글이 API 데이터에 반영된다', async ({ request, page }) => {
@@ -207,19 +211,11 @@ test('UI에서 생성한 게시글이 API 데이터에 정상 반영된다', asy
   const title = `Create E2E Test ${timestamp}`;
 
   const slug = await test.step('UI에서 게시글 생성', async () => {
-    await page.goto('/editor');
 
-    await page
-      .getByPlaceholder('Article Title')
-      .fill(title);
-
-    await page
-      .getByPlaceholder("What's this article about?")
-      .fill(ARTICLE_DESCRIPTION);
-
-    await page
-      .getByPlaceholder('Write your article (in markdown)')
-      .fill(ARTICLE_BODY);
+    await articleEditor.open();
+    await articleEditor.fillTitle(title);
+    await articleEditor.fillDescription(ARTICLE_DESCRIPTION);
+    await articleEditor.fillBody(ARTICLE_BODY);
 
     const createResponsePromise = page.waitForResponse(
       response =>
@@ -227,9 +223,7 @@ test('UI에서 생성한 게시글이 API 데이터에 정상 반영된다', asy
         response.request().method() === 'POST'
     );
 
-    await page
-      .getByRole('button', { name: 'Publish Article' })
-      .click();
+    await articleEditor.publish();
 
     const createResponse = await createResponsePromise;
 
