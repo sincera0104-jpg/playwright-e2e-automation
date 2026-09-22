@@ -257,24 +257,18 @@ for (const testCase of REQUIRED_FIELD_CASES) {
     const title = `Negative E2E Test ${timestamp}`;
 
     await test.step(`${testCase.label} 없이 게시글 생성 시도`, async () => {
-      await page.goto('/editor');
+      await articleEditor.open();
 
       if (testCase.field !== 'title') {
-        await page
-          .getByPlaceholder('Article Title')
-          .fill(title);
+        await articleEditor.fillTitle(title);
       }
 
       if (testCase.field !== 'description') {
-        await page
-          .getByPlaceholder("What's this article about?")
-          .fill(ARTICLE_DESCRIPTION);
+        await articleEditor.fillDescription(ARTICLE_DESCRIPTION);
       }
 
       if (testCase.field !== 'body') {
-        await page
-          .getByPlaceholder('Write your article (in markdown)')
-          .fill(ARTICLE_BODY);
+        await articleEditor.fillBody(ARTICLE_BODY);
       }
 
       const createResponsePromise = page.waitForResponse(
@@ -283,9 +277,7 @@ for (const testCase of REQUIRED_FIELD_CASES) {
           response.request().method() === 'POST'
       );
 
-      await page
-        .getByRole('button', { name: 'Publish Article' })
-        .click();
+      await articleEditor.publish();
 
       const createResponse = await createResponsePromise;
 
