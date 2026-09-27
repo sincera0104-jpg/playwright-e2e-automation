@@ -88,7 +88,8 @@ tests/
 │       ├── createArticle()
 │       └── getArticle()
 │       └── deleteArticle()
-│
+├── pages/
+│   └── article-editor.page.ts
 └── article-e2e.spec.ts
 
 .github/ 
@@ -105,6 +106,8 @@ UI 기본 URL은 `playwright.config.ts`, API 기본 URL은 `realworld-api.ts`에
 GitHub Actions를 통해 `main` 브랜치의 Push 및 Pull Request 시 Chromium 환경에서 E2E 테스트가 자동 실행됩니다.
 
 기본 URL은 환경변수로 관리하며, 로컬에서는 .env, CI에서는 GitHub Actions의 env를 통해 주입합니다.
+
+반복되는 게시글 작성 UI 동작은 `ArticleEditorPage` POM으로 분리합니다. 
 
 ## CI 및 테스트 리포트
 
@@ -149,8 +152,8 @@ npx playwright test --headed
 
 ## Next
 * 추가 네거티브 시나리오 확장
-* 테스트 증가 시 Page Object Model 적용 검토
 * 테스트 데이터 관리 전략 고도화
+* 상세 페이지 테스트 증가 시 추가 POM 적용 검토
 
 * API 요청 로직 분리 ✅
 * UI / API baseURL 분리 ✅
@@ -159,3 +162,4 @@ npx playwright test --headed
 * 테스트 데이터 상수 분리 ✅
 * Playwright  테스트 리포트 artifact 추가 ✅
 * UI/API 환경변수 분리 ✅
+* Page Object Model 적용 ✅
